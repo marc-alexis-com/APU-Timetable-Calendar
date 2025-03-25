@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.0/main.min.css" rel="stylesheet" />
+		<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.0/main.min.js"></script>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+		<style>
+			body {
+				margin: 0;
+				font-family: "Inter", system-ui, sans-serif;
+				height: 100vh;
+				overflow: hidden;
+				background: #f8fafc;
+			}
+
+			#calendar {
+				position: absolute;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				height: 100vh;
+			}
+
+			.fc {
+				height: 100% !important;
+			}
+
+			.fc .fc-scroller {
+				height: 100% !important;
+			}
+
+			.fc-view-harness {
+				height: calc(100% - 50px) !important;
+			}
+
+			.fc .fc-toolbar {
+				padding: 0.5rem;
+				background: white;
+				margin-bottom: 0 !important;
+				align-items: center;
+			}
+
+			.fc .fc-toolbar h2 {
+				font-size: 1.25rem;
+				font-weight: 600;
+			}
+
+			.fc .fc-button {
+				padding: 0.5rem 1rem;
+				font-weight: 500;
+				border-radius: 0.5rem;
+				background: #6366f1;
+				border-color: #6366f1;
+				text-transform: capitalize;
+			}
+
+			.fc .fc-button:hover {
+				background: #4f46e5;
+				border-color: #4f46e5;
+			}
+
+			.fc .fc-button-primary:not(:disabled).fc-button-active,
+			.fc .fc-button-primary:not(:disabled):active {
+				background: #6366f1 !important;
+				border-color: #6366f1 !important;
+				box-shadow: none !important;
+			}
+
+			.fc .fc-button:focus {
+				box-shadow: none !important;
+			}
+
+			/* Enhanced glass effect */
+			.fc-timegrid-event {
+				min-height: 25px;
+				padding: 4px 6px;
+				border: none !important;
+				border-radius: 8px !important;
+				backdrop-filter: blur(8px);
+				box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+				transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+				overflow: hidden;
+				cursor: default;
+				position: relative;
+				margin-left: 4px !important;
+				margin-right: 4px !important;
+			}
+
+			.fc-timegrid-event:hover {
+				transform: translateY(-1px) scale(1.01);
+				box-shadow: 0 6px 10px rgba(0, 0, 0, 0.12);
+				backdrop-filter: blur(12px);
+			}
+
+			.fc-timegrid-event::before {
+				content: "";
+				position: absolute;
+				top: 0;
+				left: 0;
+				right: 0;
+				height: 50%;
+				background: linear-gradient(to bottom, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0));
+				border-radius: 8px 8px 0 0;
+				transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+			}
+
+			.event-content {
+				position: relative;
+				z-index: 1;
+				transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+			}
+
+			.event-time {
+				font-size: 0.65rem;
+				font-weight: 600;
+				margin-bottom: 2px;
+				white-space: nowrap;
+				opacity: 0.95;
+			}
+
+			.event-title {
+				font-size: 0.75rem;
+				line-height: 1.2;
+				font-weight: 500;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+				opacity: 1;
+				transition: opacity 0.3s ease;
+			}
+
+			.event-room {
+				font-size: 0.85rem;
+				opacity: 1;
+				margin-top: 1px;
+				transition: opacity 0.3s ease;
+			}
+
+			.event-lecturer {
+				font-size: 0.75rem;
+				line-height: 1.2;
+				font-weight: 500;
+				opacity: 0;
+				transition: opacity 0.3s ease;
+				
+			}
+
+			.fc-timegrid-event:hover .event-title,
+			.fc-timegrid-event:hover .event-room {
+				opacity: 0;
+			}
+
+			.fc-timegrid-event:hover .event-lecturer {
+				opacity: 1;
+			}
+
+			.fc .fc-timegrid-slot {
+				height: 35px;
+			}
+
+			.fc-theme-standard td,
+			.fc-theme-standard th {
+				border-color: #e5e7eb;
+			}
+
+			.fc .fc-scrollgrid {
+				border: none;
+			}
+
+			.fc .fc-col-header-cell-cushion {
+				padding: 8px 4px;
+				font-weight: 600;
+				color: #1f2937;
+			}
+
+			/* Wave now indicator */
+			.fc-timegrid-now-indicator-line {
+				border: none !important;
+				height: 20px;
+				margin-top: -10px;
+				pointer-events: none;
+				overflow: visible;
+			}
+
+			.now-indicator-logo {
+				position: absolute;
+				width: 20px;
+				height: 20px;
+				left: -24px;
+				background: #ef4444;
+				border-radius: 50%;
+				top: 50%;
+				transform: translateY(-50%);
+			}
+
+			/* Controls */
+			.calendar-controls {
+				display: flex;
+				align-items: center;
+				gap: 1rem;
+			}
+
+			.control-button {
+				padding: 0.5rem 1rem;
+				font-weight: 500;
+				border-radius: 0.5rem;
+				background: #6366f1;
+				border: 1px solid #6366f1;
+				color: white;
+				cursor: pointer;
+				font-size: 0.875rem;
+				transition: all 0.2s;
+			}
+
+			.control-button:hover {
+				background: #4f46e5;
+				border-color: #4f46e5;
+			}
+
+			.control-button.disabled {
+				background: #e5e7eb;
+				border-color: #e5e7eb;
+				color: #9ca3af;
+				cursor: not-allowed;
+			}
+
+			@media (max-width: 768px) {
+				.fc .fc-toolbar {
+					flex-direction: column;
+					gap: 0.5rem;
+				}
+
+				.fc .fc-toolbar-chunk {
+					display: flex;
+					justify-content: center;
+					width: 100%;
+					gap: 0.5rem;
+					position: relative;
+				}
+
+				.fc .fc-toolbar-title {
+					font-size: 1.1rem;
+				}
+
+				.calendar-controls {
+					justify-content: center;
+					margin-top: 0.5rem;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div id="calendar"></div>
+		<script>
+			const courseColors = {
+				'Java Programming': '#60a5fa',
+				'Networks and Protocols': '#34d399',
+				'Language and Culture': '#8b5cf6',
+				'Object Oriented Methods with UML': '#ec4899',
+				'Intro To Machine Learning': '#f97316',
+				'Computer Architecture & OS': '#06b6d4',
+				'Advanced Web Programming': '#64748b'
+			};
+
+			function getLecturerName(description) {
+				const match = description.match(/Lecturer:\s*([^,\n]+)/);
+				return match ? match[1].trim() : 'TBA';
+			}
+
+			function lightenColor(color) {
+				const hex = color.replace('#', '');
+				const r = parseInt(hex.substr(0, 2), 16);
+				const g = parseInt(hex.substr(2, 2), 16);
+				const b = parseInt(hex.substr(4, 2), 16);
+
+				const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+				const factor = 2.5 - luminance;
+
+				const lighterR = Math.min(255, Math.floor(r + (255 - r) * factor));
+				const lighterG = Math.min(255, Math.floor(g + (255 - g) * factor));
+				const lighterB = Math.min(255, Math.floor(b + (255 - b) * factor));
+
+				return `#${lighterR.toString(16).padStart(2, '0')}${lighterG.toString(16).padStart(2, '0')}${lighterB.toString(16).padStart(2, '0')}`;
+			}
+
+			function createWaveIndicator(element) {
+				const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+				const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+				const logo = document.createElement('div');
+
+				svg.setAttribute('width', '100%');
+				svg.setAttribute('height', '20');
+				svg.style.display = 'block';
+
+				path.setAttribute('stroke', '#ef4444');
+				path.setAttribute('stroke-width', '2');
+				path.setAttribute('fill', 'none');
+				path.setAttribute('opacity', '0.8');
+
+				logo.className = 'now-indicator-logo';
+
+				element.appendChild(svg);
+				svg.appendChild(path);
+				element.appendChild(logo);
+
+				function updateWave() {
+					const width = svg.clientWidth;
+					const height = 20;
+					const now = Date.now();
+					const duration = 3000;
+					const phase = (now % duration) / duration;
+
+					let d = 'M';
+					for (let x = 0; x <= width; x += 10) {
+						const relativeX = x / width;
+						const y = Math.sin((relativeX * 4 + phase) * Math.PI * 2) * 2 + height / 2;
+						d += `${x},${y} `;
+					}
+
+					path.setAttribute('d', d);
+					requestAnimationFrame(updateWave);
+				}
+
+				updateWave();
+			}
+
+			document.addEventListener('DOMContentLoaded', function() {
+				const calendarEl = document.getElementById('calendar');
+
+				// Create controls
+				const controls = document.createElement('div');
+				controls.className = 'calendar-controls';
+
+				const showMondayButton = document.createElement('button');
+				showMondayButton.className = 'control-button';
+				showMondayButton.textContent = 'Show Monday';
+				showMondayButton.id = 'show-monday';
+
+				const showSaturdayButton = document.createElement('button');
+				showSaturdayButton.className = 'control-button disabled';
+				showSaturdayButton.textContent = 'Show Saturday';
+				showSaturdayButton.id = 'show-saturday';
+
+				controls.appendChild(showMondayButton);
+				controls.appendChild(showSaturdayButton);
+
+				const events = [
+					{% for event in events %}
+					{
+						title: "{{ event.subject }}",
+						start: "{{ event.start }}",
+						end: "{{ event.end }}",
+						extendedProps: {
+							location: "{{ event.location }}",
+							description: "{{ event.description | replace('\n', ' ') }}"
+						},
+						backgroundColor: courseColors["{{ event.subject.split('(')[0].strip() }}"] || '#94a3b8',
+						borderColor: 'transparent'
+					}{% if not loop.last %},{% endif %}
+					{% endfor %}
+				];
+
+				let hiddenDays = [];
+
+				const calendar = new FullCalendar.Calendar(calendarEl, {
+					initialView: 'timeGridWeek',
+					slotMinTime: '08:00:00',
+					slotMaxTime: '18:00:00',
+					expandRows: true,
+					stickyHeaderDates: true,
+					handleWindowResize: true,
+					allDaySlot: false,
+					slotEventOverlap: false,
+					nowIndicator: true,
+					height: '100%',
+					weekends: false,
+					firstDay: 1,
+					hiddenDays: hiddenDays,
+					slotLabelFormat: {
+						hour: '2-digit',
+						minute: '2-digit',
+						hour12: false
+					},
+					eventTimeFormat: {
+						hour: '2-digit',
+						minute: '2-digit',
+						hour12: false
+					},
+					eventContent: function(arg) {
+						const startTime = arg.event.start.toLocaleTimeString('fr-FR', {
+							hour: '2-digit',
+							minute: '2-digit',
+							hour12: false
+						});
+
+						const duration = (arg.event.end - arg.event.start) / (1000 * 60);
+						const hours = Math.floor(duration / 60);
+						const minutes = duration % 60;
+						const durationText = minutes === 0 ?
+							`${hours}h` :
+							`${hours}h${minutes.toString().padStart(2, '0')}`;
+
+						const timeColor = lightenColor(arg.event.backgroundColor);
+						const room = arg.event.extendedProps.location.split(',')[0];
+						const lecturer = getLecturerName(arg.event.extendedProps.description);
+
+						return {
+							html: `<div class="event-content">
+									<div class="event-time" style="color: ${timeColor}">${startTime} (${durationText})</div>
+									<div class="event-title">${arg.event.title}</div>
+									<div class="event-room">${room}</div>
+									<div class="event-lecturer"><i>Lecturer:</i> ${lecturer}</div>
+								</div>`
+						};
+					},
+					headerToolbar: {
+						left: 'prev,next today',
+						center: 'title',
+						right: 'timeGridWeek,timeGridDay'
+					},
+					views: {
+						timeGridWeek: {
+							dayHeaderFormat: { weekday: 'long', day: 'numeric' }
+						}
+					},
+					dayHeaderFormat: { weekday: 'long', day: 'numeric' },
+					events: events,
+					nowIndicatorDidMount: function(arg) {
+						if (arg.el.classList.contains('fc-timegrid-now-indicator-line')) {
+							createWaveIndicator(arg.el);
+						}
+					}
+				});
+
+				calendar.render();
+
+				// Add controls to toolbar after render
+				const toolbarRight = document.querySelector('.fc-toolbar-chunk:last-child');
+				toolbarRight.appendChild(controls);
+
+				// Handle Monday visibility
+				showMondayButton.addEventListener('click', function() {
+					const isShowing = !this.classList.contains('disabled');
+					if (isShowing) {
+						this.classList.add('disabled');
+						hiddenDays = [...hiddenDays, 1];
+					} else {
+						this.classList.remove('disabled');
+						hiddenDays = hiddenDays.filter(day => day !== 1);
+					}
+					calendar.setOption('hiddenDays', hiddenDays);
+				});
+
+				// Handle Saturday visibility
+				showSaturdayButton.addEventListener('click', function() {
+					const isShowing = !this.classList.contains('disabled');
+					if (isShowing) {
+						this.classList.add('disabled');
+						hiddenDays = hiddenDays.filter(day => day !== 6);
+					} else {
+						this.classList.remove('disabled');
+						hiddenDays = [...hiddenDays, 6];
+					}
+					calendar.setOption('hiddenDays', hiddenDays);
+				});
+
+				// Force calendar resize on window resize
+				window.addEventListener('resize', function() {
+					calendar.updateSize();
+				});
+
+				// Initial setup for iframe height
+				function updateIframeHeight() {
+					const iframe = window.frameElement;
+					if (iframe) {
+						iframe.style.height = '100%';
+						iframe.style.minHeight = '800px';
+					}
+				}
+				updateIframeHeight();
+			});
+		</script>
+	</body>
+</html>

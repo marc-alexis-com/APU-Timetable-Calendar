@@ -1,0 +1,6 @@
+{
+	"intake": "APUFEFREI2501",
+	"group": "G1",
+	"weeks_ahead": 4,
+	"updates_per_day": ["08:00", "16:00"]
+}

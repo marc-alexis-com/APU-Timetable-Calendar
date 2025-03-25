@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="shortcut icon" href="{{ url_for('static', filename='favico.png') }}" type="image/x-icon" />
+		<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+		<title>APU Calendar</title>
+		<style>
+			.gradient-bg {
+				background: linear-gradient(135deg, #1a365d 0%, #2563eb 100%);
+			}
+			.glass-effect {
+				background: rgba(255, 255, 255, 0.95);
+				backdrop-filter: blur(10px);
+				border: 1px solid rgba(255, 255, 255, 0.2);
+			}
+			.hover-transform {
+				transition: transform 0.2s, box-shadow 0.2s;
+			}
+			.hover-transform:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+			}
+			.modal {
+				display: none;
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background-color: rgba(0, 0, 0, 0.5);
+				z-index: 1000;
+			}
+			.modal-content {
+				background-color: white;
+				margin: 15% auto;
+				padding: 20px;
+				width: 90%;
+				max-width: 600px;
+				border-radius: 12px;
+				box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+			}
+			@media (max-width: 768px) {
+				.modal-content {
+					margin: 5% auto;
+					width: 95%;
+					max-height: 90vh;
+					overflow-y: auto;
+				}
+			}
+
+			.calendar-container {
+				height: 100%;
+				min-height: 800px;
+			}
+
+			/* Tab styles */
+			.tab-content {
+				display: none;
+			}
+
+			.tab-content.active {
+				display: block;
+			}
+
+			.tab-button {
+				position: relative;
+			}
+
+			.tab-button.active {
+				color: #2563eb;
+				font-weight: 600;
+			}
+
+			.tab-button.active:after {
+				content: "";
+				position: absolute;
+				bottom: -3px;
+				left: 0;
+				width: 100%;
+				height: 2px;
+				background-color: #2563eb;
+			}
+		</style>
+	</head>
+	<body class="gradient-bg min-h-screen p-4">
+		<div class="max-w-6xl mx-auto space-y-6">
+			<!-- Logo -->
+			<div class="flex justify-center mb-8">
+				<img src="{{ url_for('static', filename='favico.png') }}" alt="APU Logo" class="h-20 w-auto" />
+			</div>
+
+			<!-- Tabs -->
+			<div class="glass-effect rounded-xl shadow-xl p-6 mb-6">
+				<div class="flex space-x-6 border-b border-gray-200 mb-6">
+					<button id="tab-calendar" class="tab-button active pb-3 px-2">Calendar</button>
+					<button id="tab-settings" class="tab-button pb-3 px-2">Settings</button>
+					<button id="tab-mapping" class="tab-button pb-3 px-2">Subject Mapping</button>
+				</div>
+
+				<!-- Calendar Tab -->
+				<div id="content-calendar" class="tab-content active calendar-container">
+					<iframe src="/calendar_view" class="w-full h-full border-0 rounded-lg" frameborder="0"></iframe>
+				</div>
+
+				<!-- Settings Tab -->
+				<div id="content-settings" class="tab-content">
+					<h2 class="text-xl font-bold mb-4 text-blue-900">Calendar Settings</h2>
+					<form id="configForm" class="space-y-4">
+						<div>
+							<label for="intake" class="block text-sm font-medium text-blue-800">Intake Code</label>
+							<input type="text" id="intake" name="intake" value="{{ config.intake }}" class="mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+							<p class="mt-1 text-sm text-gray-500">e.g., APUFEFREI2501</p>
+						</div>
+
+						<div>
+							<label for="group" class="block text-sm font-medium text-blue-800">Group</label>
+							<input type="text" id="group" name="group" value="{{ config.group }}" class="mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+							<p class="mt-1 text-sm text-gray-500">e.g., G1</p>
+						</div>
+
+						<div>
+							<label for="weeks_ahead" class="block text-sm font-medium text-blue-800">Weeks Ahead</label>
+							<input type="number" id="weeks_ahead" name="weeks_ahead" value="{{ config.weeks_ahead }}" min="1" max="12" class="mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+							<p class="mt-1 text-sm text-gray-500">How many weeks of timetable to fetch (1-12)</p>
+						</div>
+
+						<div>
+							<label for="updates_per_day" class="block text-sm font-medium text-blue-800">Update Times</label>
+							<input type="text" id="updates_per_day" name="updates_per_day" value="{{ ','.join(config.updates_per_day) }}" class="mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+							<p class="mt-1 text-sm text-gray-500">Comma-separated list of times (24h format) when the calendar should update. E.g., 08:00,16:00</p>
+						</div>
+
+						<div>
+							<button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Save Settings</button>
+						</div>
+					</form>
+				</div>
+
+				<!-- Subject Mapping Tab -->
+				<div id="content-mapping" class="tab-content">
+					<div class="flex justify-between items-center mb-4">
+						<h2 class="text-xl font-bold text-blue-900">Subject Mapping</h2>
+						<div class="space-x-2">
+							<button onclick="addNewMapping()" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">Add New</button>
+							<button onclick="exportMapping()" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors">Export</button>
+							<button onclick="importMapping()" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors">Import</button>
+							<button onclick="showJsonModal()" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors">Paste JSON</button>
+							<input type="file" id="importFile" accept=".json" style="display: none" />
+						</div>
+					</div>
+
+					<div class="bg-white shadow-md rounded-lg overflow-hidden">
+						<table class="min-w-full divide-y divide-blue-200">
+							<thead class="bg-blue-50">
+								<tr>
+									<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-blue-500 uppercase tracking-wider">Course Code</th>
+									<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-blue-500 uppercase tracking-wider">Pretty Name</th>
+									<th scope="col" class="px-6 py-3 text-left text-xs font-medium text-blue-500 uppercase tracking-wider">Actions</th>
+								</tr>
+							</thead>
+							<tbody id="mappingBody" class="bg-white divide-y divide-blue-200">
+								<!-- Mapping rows will be inserted here dynamically -->
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+
+			<!-- Calendar URL Card -->
+			<div class="glass-effect rounded-xl shadow-xl p-6 hover-transform">
+				<h2 class="text-xl font-bold mb-4 text-blue-900">Calendar Subscription URL</h2>
+				<div class="bg-blue-50 p-4 rounded-lg break-all border border-blue-200">
+					<code id="calendarUrl" class="text-blue-800">{{ request.url_root }}calendar.ics</code>
+				</div>
+				<p class="mt-3 text-sm text-blue-800">Use this URL to subscribe to your calendar in Apple Calendar, Google Calendar, Outlook or other calendar apps.</p>
+				<button onclick="copyUrl()" class="mt-3 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors">Copy URL</button>
+			</div>
+
+			<!-- Footer -->
+			<div class="text-center text-white text-sm mt-8">
+				<p>
+					APU Timetable Calendar |
+					<a href="https://github.com/yourusername/apu-timetable-calendar" class="underline hover:text-blue-200">GitHub</a>
+				</p>
+			</div>
+		</div>
+
+		<!-- JSON Modal -->
+		<div id="jsonModal" class="modal">
+			<div class="modal-content">
+				<h3 class="text-xl font-bold mb-4 text-blue-900">Paste JSON Mapping</h3>
+				<textarea id="jsonInput" class="w-full h-64 border-2 border-blue-200 rounded-lg p-4 focus:border-blue-500 focus:ring-blue-500" placeholder="Paste your JSON here..."></textarea>
+				<div class="flex justify-end space-x-3 mt-4">
+					<button onclick="closeJsonModal()" class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors">Cancel</button>
+					<button onclick="importJsonFromText()" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">Import</button>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			// Tab handling
+			document.addEventListener("DOMContentLoaded", function () {
+				const tabButtons = document.querySelectorAll(".tab-button");
+				const tabContents = document.querySelectorAll(".tab-content");
+
+				tabButtons.forEach((button) => {
+					button.addEventListener("click", () => {
+						// Get the target content ID from the button ID
+						const targetId = button.id.replace("tab-", "content-");
+
+						// Remove active class from all buttons and contents
+						tabButtons.forEach((btn) => btn.classList.remove("active"));
+						tabContents.forEach((content) => content.classList.remove("active"));
+
+						// Add active class to clicked button and corresponding content
+						button.classList.add("active");
+						document.getElementById(targetId).classList.add("active");
+					});
+				});
+			});
+
+			// Configuration handler
+			document.getElementById("configForm").addEventListener("submit", async (e) => {
+				e.preventDefault();
+				const formData = new FormData(e.target);
+
+				try {
+					const response = await fetch("/update_config", {
+						method: "POST",
+						body: formData,
+					});
+
+					if (response.ok) {
+						showNotification("Configuration updated successfully", "success");
+						// Refresh the calendar view
+						const iframe = document.querySelector("iframe");
+						iframe.src = iframe.src;
+					} else {
+						showNotification("Error updating configuration", "error");
+					}
+				} catch (error) {
+					console.error("Error:", error);
+					showNotification("Error updating configuration", "error");
+				}
+			});
+
+			// Subject mapping management
+			let subjectMapping = {};
+
+			async function loadMapping() {
+				try {
+					const response = await fetch("/subject_mapping");
+					subjectMapping = await response.json();
+					updateMappingTable();
+				} catch (error) {
+					console.error("Error loading mapping:", error);
+					showNotification("Error loading subject mapping", "error");
+				}
+			}
+
+			function updateMappingTable() {
+				const tbody = document.getElementById("mappingBody");
+				tbody.innerHTML = "";
+
+				Object.entries(subjectMapping).forEach(([code, name]) => {
+					const row = document.createElement("tr");
+					row.className = "hover:bg-blue-50 transition-colors";
+					row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-900">${code}</td>
+                    <td class="px-6 py-4">
+                        <input type="text" value="${name}" 
+                               onchange="updateMapping('${code}', this.value)"
+                               class="w-full border-blue-200 rounded-lg focus:border-blue-500 focus:ring-blue-500">
+                    </td>
+                    <td class="px-6 py-4">
+                        <button onclick="deleteMapping('${code}')"
+                                class="text-red-600 hover:text-red-900 transition-colors">
+                            Delete
+                        </button>
+                    </td>
+                `;
+					tbody.appendChild(row);
+				});
+			}
+
+			async function updateMapping(code, name) {
+				subjectMapping[code] = name;
+				await saveMapping();
+				showNotification("Subject mapping updated", "success");
+			}
+
+			async function deleteMapping(code) {
+				if (confirm("Are you sure you want to delete this mapping?")) {
+					delete subjectMapping[code];
+					await saveMapping();
+					updateMappingTable();
+					showNotification("Subject mapping deleted", "success");
+				}
+			}
+
+			async function addNewMapping() {
+				const code = prompt("Enter course code:");
+				if (code) {
+					subjectMapping[code] = code;
+					await saveMapping();
+					updateMappingTable();
+					showNotification("New subject mapping added", "success");
+				}
+			}
+
+			async function saveMapping() {
+				try {
+					await fetch("/subject_mapping", {
+						method: "PUT",
+						headers: {
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify(subjectMapping),
+					});
+
+					// Refresh the calendar view after updating mapping
+					const iframe = document.querySelector("iframe");
+					iframe.src = iframe.src;
+				} catch (error) {
+					console.error("Error saving mapping:", error);
+					showNotification("Error saving mapping", "error");
+				}
+			}
+
+			function exportMapping() {
+				const dataStr = JSON.stringify(subjectMapping, null, 2);
+				const dataBlob = new Blob([dataStr], { type: "application/json" });
+				const url = window.URL.createObjectURL(dataBlob);
+				const a = document.createElement("a");
+				a.href = url;
+				a.download = "subject_mapping.json";
+				document.body.appendChild(a);
+				a.click();
+				document.body.removeChild(a);
+				window.URL.revokeObjectURL(url);
+				showNotification("Subject mapping exported", "success");
+			}
+
+			function importMapping() {
+				document.getElementById("importFile").click();
+			}
+
+			document.getElementById("importFile").addEventListener("change", async (e) => {
+				const file = e.target.files[0];
+				if (file) {
+					try {
+						const text = await file.text();
+						const newMapping = JSON.parse(text);
+						subjectMapping = newMapping;
+						await saveMapping();
+						updateMappingTable();
+						showNotification("Subject mapping imported successfully", "success");
+					} catch (error) {
+						console.error("Error importing mapping:", error);
+						showNotification("Error importing mapping", "error");
+					}
+				}
+			});
+
+			// Modal functions
+			function showJsonModal() {
+				document.getElementById("jsonModal").style.display = "block";
+			}
+
+			function closeJsonModal() {
+				document.getElementById("jsonModal").style.display = "none";
+			}
+
+			async function importJsonFromText() {
+				try {
+					const jsonText = document.getElementById("jsonInput").value;
+					const newMapping = JSON.parse(jsonText);
+					subjectMapping = newMapping;
+					await saveMapping();
+					updateMappingTable();
+					closeJsonModal();
+					document.getElementById("jsonInput").value = "";
+					showNotification("JSON mapping imported successfully", "success");
+				} catch (error) {
+					showNotification("Error parsing JSON: " + error.message, "error");
+				}
+			}
+
+			// Utility functions
+			function copyUrl() {
+				const urlText = document.getElementById("calendarUrl").textContent;
+				navigator.clipboard
+					.writeText(urlText)
+					.then(() => {
+						showNotification("Calendar URL copied to clipboard", "success");
+					})
+					.catch((err) => {
+						showNotification("Failed to copy URL", "error");
+					});
+			}
+
+			function showNotification(message, type) {
+				const notification = document.createElement("div");
+				notification.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg ${type === "success" ? "bg-green-500" : "bg-red-500"} text-white transform transition-transform duration-300 translate-y-0`;
+				notification.textContent = message;
+				document.body.appendChild(notification);
+
+				setTimeout(() => {
+					notification.style.transform = "translateY(150%)";
+					setTimeout(() => {
+						document.body.removeChild(notification);
+					}, 300);
+				}, 3000);
+			}
+
+			// Close modal when clicking outside
+			window.onclick = function (event) {
+				const modal = document.getElementById("jsonModal");
+				if (event.target === modal) {
+					closeJsonModal();
+				}
+			};
+
+			// Initial load
+			loadMapping();
+		</script>
+	</body>
+</html>

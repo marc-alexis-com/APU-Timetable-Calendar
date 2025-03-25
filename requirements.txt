@@ -1,0 +1,5 @@
+Flask==2.3.3
+beautifulsoup4==4.12.2
+ics==0.7.2
+pytz==2023.3
+requests==2.31.0
